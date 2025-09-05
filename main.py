@@ -37,9 +37,9 @@ def test_system():
 def enroll_users_from_data(verifier):
     """Enroll users from data directory"""
     
-    users_dir = Path("data/users")
+    users_dir = Path("ml/training/data/users")
     if not users_dir.exists():
-        print("Error: data/users directory not found!")
+        print("Error: dml/training/data/users directory not found!")
         return
     
     enrolled_count = 0
@@ -86,8 +86,8 @@ def test_verification_with_existing_users(verifier):
         print(f"  Threshold: {user_info['threshold']:.3f}")
         
         # Test with training data (should verify as genuine)
-        train_dir = Path(f"data/users/{username}/train")
-        test_dir = Path(f"data/users/{username}/test")
+        train_dir = Path(f"ml/data/users/{username}/train")
+        test_dir = Path(f"ml/data/users/{username}/test")
         
         # Test with a training signature (should pass)
         train_files = list(train_dir.glob("*.png")) + list(train_dir.glob("*.jpg"))
@@ -188,16 +188,16 @@ def quick_test():
     print("="*50)
     
     # Check if model exists
-    if not os.path.exists("data/models/siamese_model.h5"):
+    if not os.path.exists("ml/training/data/models/siamese_model.h5"):
         print("Error: No trained model found!")
         print("Please run training first: python ml/training/train_siamese.py")
         return
     
     # Check if data exists
-    users_dir = Path("data/users")
+    users_dir = Path("ml/training/data/users")
     if not users_dir.exists() or not any(users_dir.iterdir()):
         print("Error: No user data found!")
-        print("Please add signature images to data/users/{username}/train/ folders")
+        print("Please add signature images to ml/training/data/users/{username}/train/ folders")
         return
     
     # Run automatic test
