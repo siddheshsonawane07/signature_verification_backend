@@ -1,7 +1,7 @@
 """
-Fast Siamese Neural Network for Signature Verification
-Uses transfer learning for rapid training with good performance
-Updated to work with ml/training/data directory structure
+Simplified Siamese Neural Network for Signature Verification
+Uses transfer learning for better performance with limited data
+Compatible with existing SignatureVerifier and training pipeline
 """
 
 import tensorflow as tf
@@ -23,33 +23,32 @@ class SiameseNetwork:
         self.models_dir.mkdir(parents=True, exist_ok=True)
         
     def create_base_network(self):
-        """Create lightweight base network with transfer learning"""
-        # Use pre-trained MobileNetV2 - fast and effective
+        """Create simplified base network with transfer learning"""
+        # Use pre-trained MobileNetV2 - proven to work well with limited data
         base_model = tf.keras.applications.MobileNetV2(
             input_shape=self.input_shape,
             include_top=False,
             weights='imagenet'
         )
         
-        # Freeze the base model to speed up training
+        # Freeze most layers to prevent overfitting
         base_model.trainable = False
         
+        # Simple feature extraction head
         model = tf.keras.Sequential([
-            # Resize input to match MobileNet requirements if needed
-            layers.Resizing(224, 224) if self.input_shape[:2] != (224, 224) else layers.Lambda(lambda x: x),
             base_model,
             layers.GlobalAveragePooling2D(),
             layers.Dropout(0.2),
-            layers.Dense(128, activation='relu', name='feature_dense_128'),
-            layers.Dropout(0.2),
-            layers.Dense(64, activation='relu', name='feature_dense_64')
+            layers.Dense(128, activation='relu', name='features_128'),
+            layers.Dropout(0.1),
+            layers.Dense(64, activation='relu', name='features_64')
         ], name='signature_backbone')
         
         self.base_network = model
         return model
     
     def build_siamese_model(self):
-        """Build Siamese network with two inputs"""
+        """Build simplified Siamese network"""
         
         # Create base network
         base_network = self.create_base_network()
@@ -62,27 +61,18 @@ class SiameseNetwork:
         processed_a = base_network(input_a)
         processed_b = base_network(input_b)
         
-        # Multiple similarity measures for better performance
-        # L1 distance
-        l1_distance = layers.Lambda(
+        # Simple distance calculation
+        distance = layers.Lambda(
             lambda x: tf.abs(x[0] - x[1]), 
             name='l1_distance'
         )([processed_a, processed_b])
         
-        # Element-wise multiplication  
-        element_mult = layers.Multiply(name='element_multiply')([processed_a, processed_b])
-        
-        # Concatenate features
-        combined_features = layers.Concatenate(name='combined_features')([
-            l1_distance, element_mult, processed_a, processed_b
-        ])
-        
-        # Decision layers
-        x = layers.Dense(32, activation='relu', name='decision_32')(combined_features)
+        # Simple decision network
+        x = layers.Dense(32, activation='relu', name='decision_32')(distance)
         x = layers.Dropout(0.3, name='decision_dropout')(x)
         x = layers.Dense(16, activation='relu', name='decision_16')(x)
         
-        # Output layer for similarity
+        # Output layer
         output = layers.Dense(1, activation='sigmoid', name='similarity_output')(x)
         
         # Create model
@@ -101,7 +91,7 @@ class SiameseNetwork:
         return self.base_network
     
     def save_model(self, models_dir=None, model_name="siamese_signature_model"):
-        """Save the trained model to match SiameseTrainer format"""
+        """Save the trained model to match training pipeline format"""
         if models_dir is None:
             models_dir = self.models_dir
         else:
@@ -115,7 +105,7 @@ class SiameseNetwork:
             self.model.save(str(model_path))
             print(f"Model saved to {model_path}")
             
-            # Save backbone separately to match SiameseTrainer format
+            # Save backbone separately
             if self.base_network is not None:
                 self.base_network.save(str(backbone_path))
                 print(f"Backbone saved to {backbone_path}")
@@ -128,7 +118,7 @@ class SiameseNetwork:
     def load_model(self, model_path):
         """Load a saved model"""
         try:
-            self.model = tf.keras.models.load_model(model_path)
+            self.model = tf.keras.models.load_model(model_path, compile=False)
             print(f"Model loaded from {model_path}")
             return self.model
         except Exception as e:
