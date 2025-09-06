@@ -47,6 +47,8 @@ dependencies:
       - scikit-plot
       - yellowbrick
       
+      - uvicorn
+      - fastapi
       # Model Analysis
       - tensorboard
       

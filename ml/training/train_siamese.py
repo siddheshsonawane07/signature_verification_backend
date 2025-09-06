@@ -490,29 +490,228 @@ class SiameseTrainer:
         
         return focal_loss_fixed
     
+    # def train_model(self, pairs: List, labels: List) -> Tuple[bool, Any, Optional[Dict]]:
+    #     """
+    #     Train the Siamese network with advanced optimization techniques
+    #     """
+    #     print("\nTraining advanced Siamese network...")
+        
+    #     # Prepare training data
+    #     left_images = np.array([pair[0] for pair in pairs], dtype=np.float32)
+    #     right_images = np.array([pair[1] for pair in pairs], dtype=np.float32)
+    #     labels_array = np.array(labels, dtype=np.float32)
+        
+    #     print(f"Training data prepared:")
+    #     print(f"  Total pairs: {len(labels_array):,}")
+    #     print(f"  Positive pairs: {np.sum(labels_array):,.0f}")
+    #     print(f"  Negative pairs: {len(labels_array) - np.sum(labels_array):,.0f}")
+    #     print(f"  Class ratio: {np.mean(labels_array):.3f}")
+        
+    #     # Create model architecture
+    #     model, backbone = self.create_siamese_model()
+    #     self.model = model
+    #     self.backbone = backbone
+        
+    #     # Advanced optimizer configuration
+    #     initial_learning_rate = 0.001
+    #     optimizer = tf.keras.optimizers.AdamW(
+    #         learning_rate=initial_learning_rate,
+    #         weight_decay=0.01,
+    #         beta_1=0.9,
+    #         beta_2=0.999,
+    #         epsilon=1e-7
+    #     )
+        
+    #     # Compile model with focal loss and comprehensive metrics
+    #     model.compile(
+    #         optimizer=optimizer,
+    #         loss=self.focal_loss(alpha=0.25, gamma=2.0),
+    #         metrics=[
+    #             'accuracy',
+    #             tf.keras.metrics.Precision(name='precision'),
+    #             tf.keras.metrics.Recall(name='recall'),
+    #             tf.keras.metrics.AUC(name='auc'),
+    #             tf.keras.metrics.BinaryAccuracy(name='binary_accuracy')  
+    #         ]
+    #     )
+        
+    #     # Calculate class weights
+    #     unique_labels = np.unique(labels_array)
+    #     if len(unique_labels) == 2:
+    #         class_weights = compute_class_weight(
+    #             'balanced',
+    #             classes=unique_labels,
+    #             y=labels_array
+    #         )
+    #         class_weight_dict = {
+    #             0: class_weights[0],
+    #             1: class_weights[1]
+    #         }
+    #     else:
+    #         class_weight_dict = {0: 1.0, 1: 1.0}
+        
+    #     print(f"Class weights: {class_weight_dict}")
+        
+    #     # Advanced callbacks
+    #     callbacks = [
+    #         tf.keras.callbacks.EarlyStopping(
+    #             monitor='val_auc',
+    #             mode='max',
+    #             patience=12,
+    #             restore_best_weights=True,
+    #             verbose=1
+    #         ),
+            
+    #         tf.keras.callbacks.ReduceLROnPlateau(
+    #             monitor='val_loss',
+    #             factor=0.3,
+    #             patience=6,
+    #             min_lr=1e-8,
+    #             verbose=1
+    #         ),
+            
+    #         tf.keras.callbacks.ModelCheckpoint(
+    #             str(self.models_dir / "best_siamese_model.h5"),
+    #             monitor='val_auc',
+    #             mode='max',
+    #             save_best_only=True,
+    #             verbose=1
+    #         ),
+            
+    #         tf.keras.callbacks.LearningRateScheduler(
+    #             lambda epoch: initial_learning_rate * (0.95 ** epoch),
+    #             verbose=0
+    #         )
+    #     ]
+        
+    #     # Train the model
+    #     print("\nStarting model training...")
+    #     history = model.fit(
+    #         [left_images, right_images], labels_array,
+    #         batch_size=self.batch_size,
+    #         epochs=self.epochs,
+    #         validation_split=0.2,
+    #         class_weight=class_weight_dict,
+    #         callbacks=callbacks,
+    #         verbose=1
+    #     )
+        
+    #     self.training_history = history
+        
+    #     # Evaluate on validation set
+    #     val_split_idx = int(len(labels_array) * 0.8)
+    #     val_left = left_images[val_split_idx:]
+    #     val_right = right_images[val_split_idx:]
+    #     val_labels = labels_array[val_split_idx:]
+        
+    #     if len(val_labels) > 0:
+    #         val_results = model.evaluate([val_left, val_right], val_labels, verbose=0)
+    #         val_loss, val_acc, val_precision, val_recall, val_auc, val_binary_acc = val_results
+            
+    #         # Calculate F1-score manually
+    #         val_predictions = model.predict([val_left, val_right], verbose=0)
+    #         val_pred_binary = (val_predictions > 0.5).astype(int).flatten()
+            
+    #         # Confusion matrix components
+    #         tp = np.sum((val_pred_binary == 1) & (val_labels == 1))
+    #         tn = np.sum((val_pred_binary == 0) & (val_labels == 0))
+    #         fp = np.sum((val_pred_binary == 1) & (val_labels == 0))
+    #         fn = np.sum((val_pred_binary == 0) & (val_labels == 1))
+            
+    #         # Calculate metrics
+    #         precision_manual = tp / (tp + fp) if (tp + fp) > 0 else 0
+    #         recall_manual = tp / (tp + fn) if (tp + fn) > 0 else 0
+    #         val_f1 = 2 * (precision_manual * recall_manual) / (precision_manual + recall_manual) if (precision_manual + recall_manual) > 0 else 0
+            
+    #         # Security metrics
+    #         far = fp / (fp + tn) if (fp + tn) > 0 else 0
+    #         frr = fn / (fn + tp) if (fn + tp) > 0 else 0
+            
+    #         # Print results
+    #         print(f"\n{'='*60}")
+    #         print(f"TRAINING COMPLETED - PERFORMANCE SUMMARY")
+    #         print(f"{'='*60}")
+    #         print(f"Validation Accuracy:     {val_acc:.4f}")
+    #         print(f"Validation Precision:    {val_precision:.4f}")
+    #         print(f"Validation Recall:       {val_recall:.4f}")
+    #         print(f"Validation AUC:          {val_auc:.4f}")
+    #         print(f"Validation F1-Score:     {val_f1:.4f}")
+    #         print(f"False Acceptance Rate:   {far:.4f}")
+    #         print(f"False Rejection Rate:    {frr:.4f}")
+    #         print(f"Training Epochs:         {len(history.history['loss'])}")
+            
+    #         # Model quality assessment
+    #         model_quality = val_auc > 0.85 and val_acc > 0.80 and far < 0.15
+            
+    #         if model_quality:
+    #             # Save models
+    #             model.save(str(self.models_dir / "siamese_signature_model.h5"))
+    #             backbone.save(str(self.models_dir / "signature_backbone.h5"))
+                
+    #             # Save metadata
+    #             metadata = {
+    #                 'model_type': 'siamese_signature_verification',
+    #                 'validation_accuracy': float(val_acc),
+    #                 'validation_precision': float(val_precision),
+    #                 'validation_recall': float(val_recall),
+    #                 'validation_auc': float(val_auc),
+    #                 'validation_f1_score': float(val_f1),
+    #                 'false_acceptance_rate': float(far),
+    #                 'false_rejection_rate': float(frr),
+    #                 'confusion_matrix': {
+    #                     'true_positives': int(tp),
+    #                     'true_negatives': int(tn),
+    #                     'false_positives': int(fp),
+    #                     'false_negatives': int(fn)
+    #                 },
+    #                 'training_parameters': {
+    #                     'total_pairs': len(labels_array),
+    #                     'batch_size': self.batch_size,
+    #                     'epochs_trained': len(history.history['loss']),
+    #                     'initial_lr': initial_learning_rate
+    #                 },
+    #                 'model_architecture': {
+    #                     'backbone_params': int(backbone.count_params()),
+    #                     'total_params': int(model.count_params()),
+    #                     'input_shape': list(self.target_size) + [3]
+    #                 }
+    #             }
+                
+    #             with open(self.models_dir / "model_metadata.json", 'w') as f:
+    #                 json.dump(metadata, f, indent=2)
+                
+    #             print(f"\n✓ Model saved successfully!")
+    #             return True, history, metadata
+    #         else:
+    #             print(f"\n⚠ Model performance below quality threshold")
+    #             return False, history, None
+    #     else:
+    #         print(f"\n⚠ No validation data available")
+    #         return False, history, None
+    
     def train_model(self, pairs: List, labels: List) -> Tuple[bool, Any, Optional[Dict]]:
         """
         Train the Siamese network with advanced optimization techniques
         """
         print("\nTraining advanced Siamese network...")
-        
+
         # Prepare training data
         left_images = np.array([pair[0] for pair in pairs], dtype=np.float32)
         right_images = np.array([pair[1] for pair in pairs], dtype=np.float32)
         labels_array = np.array(labels, dtype=np.float32)
-        
+
         print(f"Training data prepared:")
         print(f"  Total pairs: {len(labels_array):,}")
         print(f"  Positive pairs: {np.sum(labels_array):,.0f}")
         print(f"  Negative pairs: {len(labels_array) - np.sum(labels_array):,.0f}")
         print(f"  Class ratio: {np.mean(labels_array):.3f}")
-        
+
         # Create model architecture
         model, backbone = self.create_siamese_model()
         self.model = model
         self.backbone = backbone
-        
-        # Advanced optimizer configuration
+
+        # Optimizer
         initial_learning_rate = 0.001
         optimizer = tf.keras.optimizers.AdamW(
             learning_rate=initial_learning_rate,
@@ -521,8 +720,8 @@ class SiameseTrainer:
             beta_2=0.999,
             epsilon=1e-7
         )
-        
-        # Compile model with focal loss and comprehensive metrics
+
+        # Compile model
         model.compile(
             optimizer=optimizer,
             loss=self.focal_loss(alpha=0.25, gamma=2.0),
@@ -531,11 +730,11 @@ class SiameseTrainer:
                 tf.keras.metrics.Precision(name='precision'),
                 tf.keras.metrics.Recall(name='recall'),
                 tf.keras.metrics.AUC(name='auc'),
-                tf.keras.metrics.BinaryAccuracy(name='binary_accuracy')  
+                tf.keras.metrics.BinaryAccuracy(name='binary_accuracy')
             ]
         )
-        
-        # Calculate class weights
+
+        # Class weights
         unique_labels = np.unique(labels_array)
         if len(unique_labels) == 2:
             class_weights = compute_class_weight(
@@ -543,16 +742,13 @@ class SiameseTrainer:
                 classes=unique_labels,
                 y=labels_array
             )
-            class_weight_dict = {
-                0: class_weights[0],
-                1: class_weights[1]
-            }
+            class_weight_dict = {0: class_weights[0], 1: class_weights[1]}
         else:
             class_weight_dict = {0: 1.0, 1: 1.0}
-        
+
         print(f"Class weights: {class_weight_dict}")
-        
-        # Advanced callbacks
+
+        # Callbacks
         callbacks = [
             tf.keras.callbacks.EarlyStopping(
                 monitor='val_auc',
@@ -561,7 +757,6 @@ class SiameseTrainer:
                 restore_best_weights=True,
                 verbose=1
             ),
-            
             tf.keras.callbacks.ReduceLROnPlateau(
                 monitor='val_loss',
                 factor=0.3,
@@ -569,7 +764,6 @@ class SiameseTrainer:
                 min_lr=1e-8,
                 verbose=1
             ),
-            
             tf.keras.callbacks.ModelCheckpoint(
                 str(self.models_dir / "best_siamese_model.h5"),
                 monitor='val_auc',
@@ -577,14 +771,13 @@ class SiameseTrainer:
                 save_best_only=True,
                 verbose=1
             ),
-            
             tf.keras.callbacks.LearningRateScheduler(
                 lambda epoch: initial_learning_rate * (0.95 ** epoch),
                 verbose=0
             )
         ]
-        
-        # Train the model
+
+        # Train
         print("\nStarting model training...")
         history = model.fit(
             [left_images, right_images], labels_array,
@@ -595,39 +788,37 @@ class SiameseTrainer:
             callbacks=callbacks,
             verbose=1
         )
-        
+
         self.training_history = history
-        
-        # Evaluate on validation set
+
+        # Validation split
         val_split_idx = int(len(labels_array) * 0.8)
         val_left = left_images[val_split_idx:]
         val_right = right_images[val_split_idx:]
         val_labels = labels_array[val_split_idx:]
-        
+
         if len(val_labels) > 0:
             val_results = model.evaluate([val_left, val_right], val_labels, verbose=0)
             val_loss, val_acc, val_precision, val_recall, val_auc, val_binary_acc = val_results
-            
-            # Calculate F1-score manually
+
+            # Predictions
             val_predictions = model.predict([val_left, val_right], verbose=0)
             val_pred_binary = (val_predictions > 0.5).astype(int).flatten()
-            
-            # Confusion matrix components
+
+            # Confusion matrix
             tp = np.sum((val_pred_binary == 1) & (val_labels == 1))
             tn = np.sum((val_pred_binary == 0) & (val_labels == 0))
             fp = np.sum((val_pred_binary == 1) & (val_labels == 0))
             fn = np.sum((val_pred_binary == 0) & (val_labels == 1))
-            
-            # Calculate metrics
+
+            # Manual metrics
             precision_manual = tp / (tp + fp) if (tp + fp) > 0 else 0
             recall_manual = tp / (tp + fn) if (tp + fn) > 0 else 0
             val_f1 = 2 * (precision_manual * recall_manual) / (precision_manual + recall_manual) if (precision_manual + recall_manual) > 0 else 0
-            
-            # Security metrics
             far = fp / (fp + tn) if (fp + tn) > 0 else 0
             frr = fn / (fn + tp) if (fn + tp) > 0 else 0
-            
-            # Print results
+
+            # Print
             print(f"\n{'='*60}")
             print(f"TRAINING COMPLETED - PERFORMANCE SUMMARY")
             print(f"{'='*60}")
@@ -639,56 +830,63 @@ class SiameseTrainer:
             print(f"False Acceptance Rate:   {far:.4f}")
             print(f"False Rejection Rate:    {frr:.4f}")
             print(f"Training Epochs:         {len(history.history['loss'])}")
-            
-            # Model quality assessment
+
+            # Quality check
             model_quality = val_auc > 0.85 and val_acc > 0.80 and far < 0.15
-            
+
+            # Save models (always)
             if model_quality:
-                # Save models
-                model.save(str(self.models_dir / "siamese_signature_model.h5"))
-                backbone.save(str(self.models_dir / "signature_backbone.h5"))
-                
-                # Save metadata
-                metadata = {
-                    'model_type': 'siamese_signature_verification',
-                    'validation_accuracy': float(val_acc),
-                    'validation_precision': float(val_precision),
-                    'validation_recall': float(val_recall),
-                    'validation_auc': float(val_auc),
-                    'validation_f1_score': float(val_f1),
-                    'false_acceptance_rate': float(far),
-                    'false_rejection_rate': float(frr),
-                    'confusion_matrix': {
-                        'true_positives': int(tp),
-                        'true_negatives': int(tn),
-                        'false_positives': int(fp),
-                        'false_negatives': int(fn)
-                    },
-                    'training_parameters': {
-                        'total_pairs': len(labels_array),
-                        'batch_size': self.batch_size,
-                        'epochs_trained': len(history.history['loss']),
-                        'initial_lr': initial_learning_rate
-                    },
-                    'model_architecture': {
-                        'backbone_params': int(backbone.count_params()),
-                        'total_params': int(model.count_params()),
-                        'input_shape': list(self.target_size) + [3]
-                    }
-                }
-                
-                with open(self.models_dir / "model_metadata.json", 'w') as f:
-                    json.dump(metadata, f, indent=2)
-                
-                print(f"\n✓ Model saved successfully!")
-                return True, history, metadata
+                model_path = self.models_dir / "siamese_signature_model.h5"
+                backbone_path = self.models_dir / "signature_backbone.h5"
+                status = "good"
             else:
-                print(f"\n⚠ Model performance below quality threshold")
-                return False, history, None
+                model_path = self.models_dir / "siamese_signature_model_underperforming.h5"
+                backbone_path = self.models_dir / "signature_backbone_underperforming.h5"
+                status = "underperforming"
+
+            model.save(str(model_path))
+            backbone.save(str(backbone_path))
+
+            # Save metadata
+            metadata = {
+                'model_type': 'siamese_signature_verification',
+                'status': status,
+                'validation_accuracy': float(val_acc),
+                'validation_precision': float(val_precision),
+                'validation_recall': float(val_recall),
+                'validation_auc': float(val_auc),
+                'validation_f1_score': float(val_f1),
+                'false_acceptance_rate': float(far),
+                'false_rejection_rate': float(frr),
+                'confusion_matrix': {
+                    'true_positives': int(tp),
+                    'true_negatives': int(tn),
+                    'false_positives': int(fp),
+                    'false_negatives': int(fn)
+                },
+                'training_parameters': {
+                    'total_pairs': len(labels_array),
+                    'batch_size': self.batch_size,
+                    'epochs_trained': len(history.history['loss']),
+                    'initial_lr': initial_learning_rate
+                },
+                'model_architecture': {
+                    'backbone_params': int(backbone.count_params()),
+                    'total_params': int(model.count_params()),
+                    'input_shape': list(self.target_size) + [3]
+                }
+            }
+
+            with open(self.models_dir / "model_metadata.json", 'w') as f:
+                json.dump(metadata, f, indent=2)
+
+            print(f"\n✓ Model saved at {model_path} (status: {status})")
+            return model_quality, history, metadata
+
         else:
             print(f"\n⚠ No validation data available")
             return False, history, None
-    
+
     def create_training_visualizations(self):
         """
         Create comprehensive training visualizations
@@ -874,74 +1072,104 @@ class SiameseTrainer:
         print(f"  ✓ Visualizations saved to {self.models_dir}")
         plt.show()
     
-    def generate_research_report(self) -> str:
-        """
-        Generate a comprehensive research report for documentation
-        """
-        report = f"""
-{'='*80}
-SIAMESE NEURAL NETWORK FOR SIGNATURE VERIFICATION
-COMPREHENSIVE TRAINING REPORT
-{'='*80}
+#     def generate_research_report(self) -> str:
+#         """
+#         Generate a comprehensive research report for documentation
+#         """
+#         report = f"""
+# {'='*80}
+# SIAMESE NEURAL NETWORK FOR SIGNATURE VERIFICATION
+# COMPREHENSIVE TRAINING REPORT
+# {'='*80}
 
-1. EXECUTIVE SUMMARY
--------------------
-This report presents the development and evaluation of an advanced Siamese Neural 
-Network for handwritten signature verification.
+# 1. EXECUTIVE SUMMARY
+# -------------------
+# This report presents the development and evaluation of an advanced Siamese Neural 
+# Network for handwritten signature verification.
 
-2. METHODOLOGY
---------------
+# 2. METHODOLOGY
+# --------------
 
-2.1 Dataset Preparation
-- Multi-user signature collection with quality preprocessing
-- Advanced image enhancement using CLAHE and bilateral filtering
-- Strategic pair generation for balanced training
-- Comprehensive data augmentation pipeline
+# 2.1 Dataset Preparation
+# - Multi-user signature collection with quality preprocessing
+# - Advanced image enhancement using CLAHE and bilateral filtering
+# - Strategic pair generation for balanced training
+# - Comprehensive data augmentation pipeline
 
-2.2 Network Architecture
-- ResNet-inspired backbone with residual connections
-- Channel attention mechanisms for feature enhancement
-- Multi-scale feature extraction (64→128→256→512 filters)
-- Comprehensive similarity computation layer
+# 2.2 Network Architecture
+# - ResNet-inspired backbone with residual connections
+# - Channel attention mechanisms for feature enhancement
+# - Multi-scale feature extraction (64→128→256→512 filters)
+# - Comprehensive similarity computation layer
 
-2.3 Training Strategy
-- Focal Loss for class imbalance handling
-- AdamW optimizer with weight decay regularization
-- Learning rate scheduling with exponential decay
-- Early stopping based on validation AUC
+# 2.3 Training Strategy
+# - Focal Loss for class imbalance handling
+# - AdamW optimizer with weight decay regularization
+# - Learning rate scheduling with exponential decay
+# - Early stopping based on validation AUC
 
-3. MODEL ARCHITECTURE DETAILS
------------------------------
-- Total Parameters: ~2.1M
-- Backbone Parameters: ~1.8M
-- Input Shape: 224x224x3
-- Feature Embedding: 128-dimensional
+# 3. MODEL ARCHITECTURE DETAILS
+# -----------------------------
+# - Total Parameters: ~2.1M
+# - Backbone Parameters: ~1.8M
+# - Input Shape: 224x224x3
+# - Feature Embedding: 128-dimensional
 
-4. TRAINING CONFIGURATION
-------------------------
-- Batch Size: {self.batch_size}
-- Maximum Epochs: {self.epochs}
-- Learning Rate: 0.001 (with decay)
-- Optimizer: AdamW
-- Loss Function: Focal Loss (α=0.25, γ=2.0)
+# 4. TRAINING CONFIGURATION
+# ------------------------
+# - Batch Size: {self.batch_size}
+# - Maximum Epochs: {self.epochs}
+# - Learning Rate: 0.001 (with decay)
+# - Optimizer: AdamW
+# - Loss Function: Focal Loss (α=0.25, γ=2.0)
 
-5. PERFORMANCE METRICS
-----------------------
-Performance metrics are calculated on the validation set and saved 
-in the model metadata file.
+# 5. PERFORMANCE METRICS
+# ----------------------
+# Performance metrics are calculated on the validation set and saved 
+# in the model metadata file.
 
-{'='*80}
-Report Generated: train_siamese.py
-Model Version: 2.0
-{'='*80}
-"""
+# {'='*80}
+# Report Generated: train_siamese.py
+# Model Version: 2.0
+# {'='*80}
+# """
         
-        # Save report to file
-        with open(self.models_dir / 'training_report.txt', 'w') as f:
-            f.write(report)
+#         # Save report to file
+#         with open(self.models_dir / 'training_report.txt', 'w') as f:
+#             f.write(report)
         
-        return report
+#         return report
     
+    def generate_research_report(self):
+        report_path = os.path.join(self.reports_dir, "research_report.txt")
+        try:
+            with open(report_path, "w") as f:
+                f.write("Siamese Network Research Report\n")
+                f.write("="*40 + "\n\n")
+
+                # Training history
+                f.write("Training History:\n")
+                for metric, values in self.results.get("history", {}).items():
+                    f.write(f"{metric}: {values}\n")
+                f.write("\n")
+
+                # Evaluation
+                f.write("Evaluation Results:\n")
+                for metric, value in self.results.get("evaluation", {}).items():
+                    f.write(f"{metric}: {value:.4f}\n")
+                f.write("\n")
+
+                # Notes
+                f.write("Notes:\n")
+                if self.results.get("evaluation", {}).get("accuracy", 0) < 0.85:
+                    f.write("- Model performed below threshold but was still saved.\n")
+                else:
+                    f.write("- Model met or exceeded the accuracy threshold.\n")
+
+            self.logger.info(f"Research report saved at {report_path}")
+        except Exception as e:
+            self.logger.error(f"Error generating research report: {e}")
+
     def run_complete_training_pipeline(self) -> bool:
         """
         Execute the complete training pipeline with comprehensive evaluation

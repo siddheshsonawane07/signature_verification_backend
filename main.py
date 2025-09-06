@@ -83,7 +83,7 @@ def test_verification_with_existing_users(verifier):
         user_info = verifier.get_user_info(username)
         print(f"  Enrolled: {user_info['enrollment_date']}")
         print(f"  Signatures: {user_info['signature_count']}")
-        print(f"  Threshold: {user_info['threshold']:.3f}")
+        # print(f"  Threshold: {user_info['threshold']:.3f}")
         
         # Test with training data (should verify as genuine)
         train_dir = Path(f"ml/data/users/{username}/train")
